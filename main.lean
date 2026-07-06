@@ -29,7 +29,7 @@ def Nonempty (A : NFObject) : Prop := ∃ (x : NFObject), x ∈ A
 def SubsetOf (x a : NFObject) : Prop := ∀ (t : NFObject), t ∈ x → t ∈ a
 infix:40 " ⊆ " => λ x y => SubsetOf x y
 
--- Chapter 2
+-- [Chapter 2]
 
 -- Axiom of Extensionality.
 axiom extensionality : ∀ (A B : NFObject), IsSet A -> IsSet B -> (∀ (x : NFObject), (x ∈ A ↔ x ∈ B)) → A = B
@@ -66,13 +66,15 @@ theorem extensionality_negative: ∀ (A B : NFObject), IsSet A -> IsSet B -> (�
   have hx := h x
   apply contrapose_neg_elim hx
 
--- Chapter 3
+-- [Chapter 3]
+-- Axiom of Universal Set.
 axiom universal_set: ∃ (V : NFObject), ((∀ (x: NFObject), IsSet x -> x ∈ V) ∧ IsSet V)
 
+-- Axiom of Complements.
 axiom complements: ∀ (A : NFObject), IsSet A -> ∃ (Ac: NFObject), IsSet Ac ∧ (∀ (x: NFObject), x ∈ Ac <-> x ∉ A)
 
+-- Axiom of (Boolean) Unions.
 axiom unions: ∀ (A B : NFObject), IsSet A -> IsSet B -> ∃ (AuB: NFObject), (IsSet AuB) ∧ (∀ (x: NFObject), (x ∈ A ∨ x ∈ B) <-> x ∈ AuB)
-/- axiom complements: ∀ (A: NFObject), IsSet A -> ∃ (Ac: NFObject), IsSet Ac ∧  -/
 
 theorem intersection (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (AiB: NFObject), (IsSet AiB ∧ (∀ (x: NFObject), (((x ∈ A) ∧ (x ∈ B)) <-> (x ∈ AiB)))) := by
   obtain ⟨Ac, hAc, hAc_mem⟩ := complements A hA
@@ -104,4 +106,16 @@ theorem intersection (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (AiB: NFO
     simp only [hAc_mem x, hBc_mem x, Decidable.not_not] at hnDis
     exact hnDis
     
+theorem relative_complement (A B: NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C: NFObject), IsSet C ∧ (∀ (x: NFObject), x ∈ A ∧ x ∉ B <-> x ∈ C) := by 
+  obtain ⟨Bc, hBc, hBc_mem⟩ := complements B hB
+  obtain comp := intersection A Bc hA hBc
+  
+  match comp with 
+  | ⟨C, hC, hC_comp⟩ =>
+    exists C
+    refine And.symm ⟨?_, hC⟩
+    intro x
+    have hCx_comp := hC_comp x
+    rw [hBc_mem] at hCx_comp
+    exact hCx_comp
 
