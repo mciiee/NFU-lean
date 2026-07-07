@@ -20,11 +20,13 @@ axiom ElementOf : NFObject -> NFObject -> Prop
 infix:50 " ∈ " => ElementOf
 infix:40 " ∉ " => λ x y => ¬ ElementOf x y
 
-def Empty (e: NFObject) : Prop := ∀ (x: NFObject), x ∉ e
+def Empty (E: NFObject) : Prop := ∀ (x: NFObject), x ∉ E
 def Nonempty (A : NFObject) : Prop := ∃ (x : NFObject), x ∈ A
 def SubsetOf (x a : NFObject) (_: IsSet x) (_: IsSet a) : Prop := ∀ (t : NFObject), t ∈ x → t ∈ a
 infix:40 " ⊆ " => λ x y => SubsetOf x y
-
+def Disjoint (A B: NFObject) (_: IsSet A) (_: IsSet B): Prop := ∀ (x: NFObject), x ∉ A ∨ x ∉ B
+def Intersection (A B: NFObject) (_: IsSet A) (_: IsSet B) (C: NFObject) : Prop := ∀ (x: NFObject), (x ∈ A ∧ x ∈ B) <-> x ∈ C
+/- def EmptyIntersection (A B: NFObject) := -/
 -- [Chapter 2]
 
 -- Axiom of Extensionality.
@@ -60,15 +62,31 @@ theorem extensionality_negative: ∀ (A B : NFObject), IsSet A -> IsSet B -> (�
 
 -- [Chapter 3]
 -- Axiom of Universal Set.
-axiom universal_set: ∃ (V : NFObject), ((∀ (x: NFObject), IsSet x -> x ∈ V) ∧ IsSet V)
+axiom universal_set: ∃ (V : NFObject), IsSet V ∧  (∀ (x: NFObject),  x ∈ V)
 
 -- Axiom of Complements.
 axiom complements: ∀ (A : NFObject), IsSet A -> ∃ (Ac: NFObject), IsSet Ac ∧ (∀ (x: NFObject), x ∈ Ac <-> x ∉ A)
 
+theorem empty_exists: ∃ (E: NFObject), IsSet E ∧ Empty E := by 
+  obtain ⟨V, hV, hV_formula⟩ := universal_set
+  obtain ⟨Vc, hVc, hVc_formula⟩ := complements V hV
+
+  exists Vc
+  refine ⟨hVc, ?_⟩ 
+  
+  intro x
+  
+  obtain hVx := hV_formula x
+  obtain hVcx := Iff.symm (contrapose_neg_intro (hVc_formula x))
+  rw [not_not] at hVcx  
+  
+  apply hVcx.mp hVx
+
+
 -- Axiom of (Boolean) Unions.
 axiom unions: ∀ (A B : NFObject), IsSet A -> IsSet B -> ∃ (AuB: NFObject), (IsSet AuB) ∧ (∀ (x: NFObject), (x ∈ A ∨ x ∈ B) <-> x ∈ AuB)
 
-theorem intersection (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (AiB: NFObject), (IsSet AiB ∧ (∀ (x: NFObject), (((x ∈ A) ∧ (x ∈ B)) <-> (x ∈ AiB)))) := by
+theorem intersection (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (AiB: NFObject), IsSet AiB ∧ Intersection A B hA hB AiB := by
   obtain ⟨Ac, hAc, hAc_mem⟩ := complements A hA
   obtain ⟨Bc, hBc, hBc_mem⟩ := complements B hB
   obtain ⟨C, hC, hC_mem⟩ := unions Ac Bc hAc hBc
@@ -132,7 +150,7 @@ theorem symmetric_difference (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (
   rw [hSD_formula]
 
 -- Alternative description of the symmetric difference as [(A union B)\(A intersect B)]
-theorem symmetric_difference_alt (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C: NFObject), IsSet C ∧ (∀ (x: NFObject), (x ∈ A ∨ x ∈ B) ∧ ¬ (x ∈ A ∧ x ∈ B) <-> x ∈ C)  := by 
+theorem symmetric_difference_alt (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C: NFObject), IsSet C ∧ (∀ (x: NFObject), (x ∈ A ∨ x ∈ B) ∧ ¬ (x ∈ A ∧ x ∈ B) <-> x ∈ C) := by 
   obtain ⟨AuB, hAuB, hAuB_formula⟩ := unions A B hA hB 
   obtain ⟨AiB, hAiB, hAiB_formula⟩ := intersection A B hA hB 
   obtain ⟨SD, hSD, hSD_formula⟩ :=  relative_complement AuB AiB hAuB hAiB
@@ -148,3 +166,92 @@ theorem symmetric_difference_alt (A B : NFObject) (hA: IsSet A) (hB: IsSet B): �
   rw [hAiB_formula]
   rw [hSD_formula]
 
+  
+theorem empty_is_subset (A: NFObject) (hA: IsSet A) (E: NFObject) (hE: IsSet E) (hEe: Empty E) : SubsetOf E A hE hA := by
+  rw [SubsetOf]
+  rw [Empty] at hEe
+  
+  intro x
+
+  obtain hEex := hEe x
+  intro hinE
+
+  have contra := And.intro hEex hinE
+  rw [not_and_self_iff] at contra
+
+  apply False.elim contra
+
+
+theorem subset_iff_idempotent_union (A B : NFObject) (hA: IsSet A) (hB: IsSet B): SubsetOf A B hA hB <-> ∀ (x: NFObject), x ∈ A ∨ x ∈ B <-> x ∈ B :=
+  by
+  obtain ⟨AuB, hAuB, hAuB_formula⟩ := unions A B hA hB
+
+  constructor
+  case mp =>
+    intro hSub
+    rw [SubsetOf] at hSub
+    intro x
+    have hSubx := hSub x
+    exact or_iff_right_iff_imp.mpr (hSub x)
+  
+  case mpr =>
+    intro hUni
+    rw [SubsetOf]
+    intro x
+    have hUnix := hUni x
+    refine fun a => hUnix.mp (Or.inl a)
+
+ 
+theorem disjoint_if_empty_intersection (A B : NFObject) (hA: IsSet A) (hB: IsSet B): Disjoint A B hA hB <-> ∃ (E: NFObject), IsSet E ∧ Empty E ∧  Intersection A B hA hB E := by
+
+  constructor 
+  case mp =>
+    intro hDis
+    rw [Disjoint] at hDis
+    obtain ⟨E, hEs, hEe⟩ := empty_exists
+    exists E
+    refine ⟨hEs, hEe, ?_⟩ 
+    rw [Intersection]
+
+    intro x
+
+    have hDisx := hDis x
+
+    constructor
+    case mpr =>
+      rw [Empty] at hEe
+      have hEex := hEe x
+      intro hIne
+      have contra := And.intro hEex hIne
+      rw [not_and_self_iff] at contra
+      apply False.elim contra
+
+    case mp =>
+      rw [<- not_and_iff_not_or_not] at hDisx
+      intro hInt 
+      have contra := And.intro hDisx hInt
+      rw [not_and_self_iff] at contra
+      apply False.elim contra
+
+
+  case mpr =>
+    intro hEmpt
+    obtain ⟨E, hEs, ⟨hEe, hIntr⟩⟩ := hEmpt
+    rw [Intersection] at hIntr
+    rw [Disjoint]
+    
+    intro x
+    rw [<- not_and_iff_not_or_not]
+    
+    have hIntrx := Iff.symm (contrapose_neg_intro (hIntr x))
+    rw [Empty] at hEe
+
+    have hEisE := hEe x
+
+    apply hIntrx.mp (hEisE)
+    
+-- Axiom of Set Union
+axiom set_union (A: NFObject) (hA: IsSet A): (∀ (x:NFObject), x ∈ A -> IsSet x) -> ∃ (S: NFObject), IsSet S ∧ (∀ (x: NFObject), x ∈ S <-> ∃ (B: NFObject), IsSet B ∧ B ∈ A ∧ x ∈ B)
+
+-- Exercises [Chapter 2]
+-- (b)
