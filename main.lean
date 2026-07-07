@@ -1,5 +1,4 @@
 open Classical
-/- axiom contrapose: (p -> q) -> (¬p -> ¬q) -/
 axiom equivalence_transitivity: (p <-> q) -> (q <-> r) -> (p <-> r)
 axiom contrapose_neg_elim (eq: (¬ p <-> ¬ q)):  (p <-> q)
 axiom contrapose_neg_intro (eq: (p <-> q)):  (¬ p <-> ¬ q)
@@ -11,9 +10,6 @@ axiom demorgan_neg_dis_rev: (¬ p) ∧ (¬q) -> ¬ (p ∨ q)
 axiom demorgan_neg_dis_equiv: ¬ (p ∨ q) <-> (¬ p) ∧ (¬q)
 axiom double_negation_intro: p -> ¬¬p
 axiom double_negation_elim: (¬¬p) -> p
--- x ∈ A ∧ x ∈ B ↔ ¬(¬x ∈ A ∨ ¬x ∈ B)
-/- axiom contrapose_iff: (p <-> q) -> (¬p <-> ¬q) -/
-/- axiom contrapose_iff_double_neg_elim: (¬¬ p <-> ¬¬q) -> (p <-> q) -/
 
 namespace NFU
 axiom NFObject: Type
@@ -118,4 +114,41 @@ theorem relative_complement (A B: NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C:
     have hCx_comp := hC_comp x
     rw [hBc_mem] at hCx_comp
     exact hCx_comp
+
+theorem symmetric_difference (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C: NFObject), IsSet C ∧ (∀ (x: NFObject), (x ∈ B ∧ x ∉ A) ∨ (x ∈ A ∧ x ∉ B) <-> x ∈ C)  := by 
+  obtain ⟨AnB, hAnB, hAnB_formula⟩ := relative_complement A B hA hB
+  obtain ⟨BnA, hBnA, hBnA_formula⟩ := relative_complement B A hB hA
+  obtain ⟨SD, hSD, hSD_formula⟩ := unions BnA AnB hBnA hAnB 
+
+  exists SD
+  refine ⟨hSD, ?_⟩
+
+  intro x
+
+  obtain hSDx := hSD_formula x
+  rw [<- hAnB_formula] at hSDx
+  rw [<- hBnA_formula] at hSDx
+
+  have hAnBx := hAnB_formula x
+
+  rw [hAnB_formula]
+  rw [hBnA_formula]
+  rw [hSD_formula]
+
+-- Alternative description of the symmetric difference as [(A union B)\(A intersect B)]
+theorem symmetric_difference_alt (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C: NFObject), IsSet C ∧ (∀ (x: NFObject), (x ∈ A ∨ x ∈ B) ∧ ¬ (x ∈ A ∧ x ∈ B) <-> x ∈ C)  := by 
+  obtain ⟨AuB, hAuB, hAuB_formula⟩ := unions A B hA hB 
+  obtain ⟨AiB, hAiB, hAiB_formula⟩ := intersection A B hA hB 
+  obtain ⟨SD, hSD, hSD_formula⟩ :=  relative_complement AuB AiB hAuB hAiB
+
+  exists SD
+  refine ⟨hSD, ?_⟩
+
+  intro x
+
+  have hSDx := hSD_formula x
+  
+  rw [hAuB_formula]
+  rw [hAiB_formula]
+  rw [hSD_formula]
 
