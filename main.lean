@@ -22,19 +22,15 @@ infix:40 " ∉ " => λ x y => ¬ ElementOf x y
 
 def Empty (e: NFObject) : Prop := ∀ (x: NFObject), x ∉ e
 def Nonempty (A : NFObject) : Prop := ∃ (x : NFObject), x ∈ A
-def SubsetOf (x a : NFObject) : Prop := ∀ (t : NFObject), t ∈ x → t ∈ a
+def SubsetOf (x a : NFObject) (_: IsSet x) (_: IsSet a) : Prop := ∀ (t : NFObject), t ∈ x → t ∈ a
 infix:40 " ⊆ " => λ x y => SubsetOf x y
 
 -- [Chapter 2]
 
 -- Axiom of Extensionality.
 axiom extensionality : ∀ (A B : NFObject), IsSet A -> IsSet B -> (∀ (x : NFObject), (x ∈ A ↔ x ∈ B)) → A = B
-theorem extensionality_subset: ∀ (A B : NFObject), IsSet A -> IsSet B -> (SubsetOf A B ∧ SubsetOf B A) -> A = B := 
+theorem extensionality_subset(A B : NFObject) (hA: IsSet A) (hB: IsSet B): (SubsetOf A B hA hB  ∧ SubsetOf B A hB hA) -> A = B := 
   by
-  intro A
-  intro B
-  intro hA 
-  intro hB
   intro h
   obtain ⟨hAB, hBA⟩ := h
   apply extensionality A B
