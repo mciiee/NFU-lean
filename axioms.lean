@@ -1,4 +1,5 @@
 open Classical
+axiom conjunction_distributivity: p ∧ (q ∨ r) <-> (p ∧ q) ∨ (p ∧ r)
 axiom equivalence_transitivity: (p <-> q) -> (q <-> r) -> (p <-> r)
 axiom contrapose_neg_elim (eq: (¬ p <-> ¬ q)):  (p <-> q)
 axiom contrapose_neg_intro (eq: (p <-> q)):  (¬ p <-> ¬ q)
@@ -299,10 +300,19 @@ theorem symmetric_difference_associative (A B C : NFObject) (hA : IsSet A) (hB :
   rw [<- hZdefx] at hWdefx
   rw [<- hXdefx] at hYdefx
 
-  rw [← hYdefx]
-  rw [← hWdefx]
+  -- rw [<- hYdefx]
+  -- rw [<- hWdefx]
 
-    
+  -- hYdefx : (x ∈ C ∧ ¬((x ∈ B ∧ ¬x ∈ A) ∨ (x ∈ A ∧ ¬x ∈ B))) ∨ (((x ∈ B ∧ ¬x ∈ A) ∨ (x ∈ A ∧ ¬x ∈ B)) ∧ ¬x ∈ C) ↔ x ∈ Y
+  rw [not_or] at hYdefx
+  -- hYdefx : (x ∈ C ∧ ¬(x ∈ B ∧ ¬x ∈ A) ∧ ¬(x ∈ A ∧ ¬x ∈ B)) ∨ ((x ∈ B ∧ ¬x ∈ A ∨ x ∈ A ∧ ¬x ∈ B) ∧ ¬x ∈ C) ↔ x ∈ Y
+  rw [not_and_iff_not_or_not, not_not] at hYdefx
+  rw [not_and_iff_not_or_not, not_not] at hYdefx
+  -- hYdefx : x ∈ C ∧ (¬x ∈ B ∨ x ∈ A) ∧ (¬x ∈ A ∨ x ∈ B) ∨ (x ∈ B ∧ ¬x ∈ A ∨ x ∈ A ∧ ¬x ∈ B) ∧ ¬x ∈ C ↔ x ∈ Y
+  rw? at hYdefx
+  -- rw [conjunction_distributivity] at hYdefx
+  
+
 
       
   
