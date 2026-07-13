@@ -26,6 +26,7 @@ def SubsetOf (x a : NFObject) (_: IsSet x) (_: IsSet a) : Prop := ∀ (t : NFObj
 infix:40 " ⊆ " => λ x y => SubsetOf x y
 def Disjoint (A B: NFObject) (_: IsSet A) (_: IsSet B): Prop := ∀ (x: NFObject), x ∉ A ∨ x ∉ B
 def Intersection (A B: NFObject) (_: IsSet A) (_: IsSet B) (C: NFObject) : Prop := ∀ (x: NFObject), (x ∈ A ∧ x ∈ B) <-> x ∈ C
+def SymmetricDifference (A B: NFObject) (_: IsSet A) (_: IsSet B) (C: NFObject) : Prop := ∀ (x: NFObject), (x ∈ B ∧ x ∉ A) ∨ (x ∈ A ∧ x ∉ B) <-> x ∈ C
 /- def EmptyIntersection (A B: NFObject) := -/
 -- [Chapter 2]
 
@@ -129,7 +130,7 @@ theorem relative_complement (A B: NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C:
     rw [hBc_mem] at hCx_comp
     exact hCx_comp
 
-theorem symmetric_difference (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C: NFObject), IsSet C ∧ (∀ (x: NFObject), (x ∈ B ∧ x ∉ A) ∨ (x ∈ A ∧ x ∉ B) <-> x ∈ C)  := by 
+theorem symmetric_difference (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (C: NFObject), IsSet C ∧ SymmetricDifference A B hA hB C  := by 
   obtain ⟨AnB, hAnB, hAnB_formula⟩ := relative_complement A B hA hB
   obtain ⟨BnA, hBnA, hBnA_formula⟩ := relative_complement B A hB hA
   obtain ⟨SD, hSD, hSD_formula⟩ := unions BnA AnB hBnA hAnB 
@@ -255,3 +256,61 @@ axiom set_union (A: NFObject) (hA: IsSet A): (∀ (x:NFObject), x ∈ A -> IsSet
 
 -- Exercises [Chapter 2]
 -- (b)
+theorem symmetric_difference_symm (A B: NFObject) (hA: IsSet A) (hB: IsSet B) (hAdB: SymmetricDifference A B hA hB C) (hC: IsSet C) (hBdA: SymmetricDifference B A hB hA D) (hD: IsSet D): C = D := by
+  /- rw [SymmetricDifference] at hAdB -/
+  /- rw [SymmetricDifference] at hBdA -/
+  apply extensionality C D hC hD
+  intro x
+  rw [SymmetricDifference] at hAdB
+  rw [SymmetricDifference] at hBdA
+
+  obtain hAdBx := hAdB x
+  obtain hBdAx := hBdA x
+  rw [or_comm] at hAdBx
+  apply equivalence_transitivity (Iff.symm hAdBx) hBdAx
+
+-- (A + B) + C = A + (B + C)
+-- X + C = A + Z
+-- Y = W
+theorem symmetric_difference_associative (A B C : NFObject) (hA : IsSet A) (hB : IsSet B) (hC : IsSet C) (X : NFObject) (hX : IsSet X) (hXdef : SymmetricDifference A B hA hB X) (Y : NFObject) (hY : IsSet Y) (hYdef : SymmetricDifference X C hX hC Y) (Z : NFObject) (hZ : IsSet Z) (hZdef : SymmetricDifference B C hB hC Z) (W : NFObject) (hW : IsSet W) (hWdef : SymmetricDifference A Z hA hZ W) : Y = W := by
+  /- rw [SymmetricDifference] at hYdef -/
+  /- rw [SymmetricDifference] at hWdef -/
+  /- rw [SymmetricDifference] at hXdef -/
+  /- rw [SymmetricDifference] at hZdef -/
+
+
+  apply extensionality Y W hY hW 
+  intro x 
+  have hYdefx := hYdef x
+  have hWdefx := hWdef x
+  have hXdefx := hXdef x
+  have hZdefx := hZdef x
+
+
+
+  rw [<- hZdefx] at hWdefx
+  rw [<- hXdefx] at hYdefx
+  
+  simp [not] at hYdefx
+  simp [not] at hWdefx
+  simp [not] at hXdefx
+  simp [not] at hZdefx
+  
+  rw [<- hZdefx] at hWdefx
+  rw [<- hXdefx] at hYdefx
+
+  rw [← hYdefx]
+  rw [← hWdefx]
+
+    
+
+      
+  
+-- Chapter 4.
+axiom singletons (x: NFObject): ∃ (Sx: NFObject), IsSet Sx ∧ ∀ (y: NFObject), y ∈ Sx <-> y = x
+
+noncomputable def ι (x : NFObject) : NFObject := 
+  Classical.choose (singletons x)
+
+theorem ι_spec (x: NFObject) : IsSet (ι x) ∧ ∀ y, y ∈ (ι x) <-> y = x := Classical.choose_spec (singletons x)
+
