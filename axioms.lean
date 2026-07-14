@@ -274,12 +274,6 @@ theorem symmetric_difference_symm (A B: NFObject) (hA: IsSet A) (hB: IsSet B) (h
 -- X + C = A + Z
 -- Y = W
 theorem symmetric_difference_associative (A B C : NFObject) (hA : IsSet A) (hB : IsSet B) (hC : IsSet C) (X : NFObject) (hX : IsSet X) (hXdef : SymmetricDifference A B hA hB X) (Y : NFObject) (hY : IsSet Y) (hYdef : SymmetricDifference X C hX hC Y) (Z : NFObject) (hZ : IsSet Z) (hZdef : SymmetricDifference B C hB hC Z) (W : NFObject) (hW : IsSet W) (hWdef : SymmetricDifference A Z hA hZ W) : Y = W := by
-  /- rw [SymmetricDifference] at hYdef -/
-  /- rw [SymmetricDifference] at hWdef -/
-  /- rw [SymmetricDifference] at hXdef -/
-  /- rw [SymmetricDifference] at hZdef -/
-
-
   apply extensionality Y W hY hW 
   intro x 
   have hYdefx := hYdef x
@@ -287,33 +281,86 @@ theorem symmetric_difference_associative (A B C : NFObject) (hA : IsSet A) (hB :
   have hXdefx := hXdef x
   have hZdefx := hZdef x
 
-
-
-  rw [<- hZdefx] at hWdefx
-  rw [<- hXdefx] at hYdefx
-  
-  simp [not] at hYdefx
-  simp [not] at hWdefx
-  simp [not] at hXdefx
-  simp [not] at hZdefx
+  simp only [not] at hYdefx
+  simp only [not] at hWdefx
+  simp only  [not] at hXdefx
+  simp only [not] at hZdefx
   
   rw [<- hZdefx] at hWdefx
   rw [<- hXdefx] at hYdefx
 
-  -- rw [<- hYdefx]
-  -- rw [<- hWdefx]
-
-  -- hYdefx : (x ∈ C ∧ ¬((x ∈ B ∧ ¬x ∈ A) ∨ (x ∈ A ∧ ¬x ∈ B))) ∨ (((x ∈ B ∧ ¬x ∈ A) ∨ (x ∈ A ∧ ¬x ∈ B)) ∧ ¬x ∈ C) ↔ x ∈ Y
   rw [not_or] at hYdefx
-  -- hYdefx : (x ∈ C ∧ ¬(x ∈ B ∧ ¬x ∈ A) ∧ ¬(x ∈ A ∧ ¬x ∈ B)) ∨ ((x ∈ B ∧ ¬x ∈ A ∨ x ∈ A ∧ ¬x ∈ B) ∧ ¬x ∈ C) ↔ x ∈ Y
   rw [not_and_iff_not_or_not, not_not] at hYdefx
   rw [not_and_iff_not_or_not, not_not] at hYdefx
-  -- hYdefx : x ∈ C ∧ (¬x ∈ B ∨ x ∈ A) ∧ (¬x ∈ A ∨ x ∈ B) ∨ (x ∈ B ∧ ¬x ∈ A ∨ x ∈ A ∧ ¬x ∈ B) ∧ ¬x ∈ C ↔ x ∈ Y
-  rw? at hYdefx
-  -- rw [conjunction_distributivity] at hYdefx
   
+  constructor 
+  case mp =>
+    intro hxinY
+
+    rcases hYdefx.mpr hxinY with ⟨hInC, hnSAB⟩ | ⟨⟨hInB, hnInA⟩ | ⟨hInA, hnInB⟩, hnInC⟩ 
+    case inl =>
+      rw [<- Decidable.imp_iff_not_or] at hnSAB
+      rw [<- Decidable.imp_iff_not_or] at hnSAB
+      rw [<- iff_def] at hnSAB
+
+      rw [hnSAB] at hWdefx
+
+      rw [<- hWdefx]
+      by_cases hInA: x ∈ A
+      case pos =>
+        refine Or.inr ?_
+        refine And.intro hInA ?_
+        simp only [not_or, not_and, Decidable.not_not]
+        exact ⟨fun a => hInA, fun a => hInC⟩
+      case neg =>
+        refine Or.inl ?_
+        refine And.intro ?_ hInA
+        refine Or.inl ?_
+        exact ⟨hInC, hInA⟩ 
+
+    case inr.inr =>
+      rw [<- hWdefx]
+      refine Or.inr ?_
+      refine And.intro hInA ?_
+      simp only [not_or, not_and, Decidable.not_not]
+      rw [<- iff_def]
+      rw [propext (iff_false_left hnInC)]
+      exact hnInB
+
+    case inr.inl =>
+      rw [<- hWdefx]
+      refine Or.inl ?_
+      refine And.intro ?_ hnInA
+      refine Or.inr ?_
+      exact ⟨hInB, hnInC⟩ 
 
 
+  case mpr =>
+    intro hInW
+    rcases hWdefx.mpr hInW with ⟨⟨hInC, hnInB⟩ | ⟨hInB, hnInC⟩, hnInA⟩ | ⟨hInA, hnSCB⟩
+    case inl.inl =>
+      rw [<- hYdefx]
+      refine Or.inl ?_
+      refine ⟨hInC, Or.inl hnInB, Or.inl hnInA⟩ 
+    
+    case inl.inr =>
+      rw [<- hYdefx]
+      refine Or.inr ?_
+      exact ⟨Or.inl ⟨hInB, hnInA⟩ ,hnInC⟩ 
+
+    case inr =>
+      rw [<- hYdefx]
+      simp only [not_or, not_and, Decidable.not_not] at hnSCB
+      rw [<- iff_def] at hnSCB
+      rw [hnSCB]
+      by_cases hInB: x ∈ B
+      case pos =>
+        refine Or.inl ?_
+        exact ⟨hInB, Or.inr hInA, Or.inr hInB⟩
+
+      case neg =>
+        refine Or.inr ?_
+        exact ⟨Or.inr ⟨hInA, hInB⟩ , hInB⟩ 
       
   
 -- Chapter 4.
