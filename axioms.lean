@@ -361,7 +361,72 @@ theorem symmetric_difference_associative (A B C : NFObject) (hA : IsSet A) (hB :
       case neg =>
         refine Or.inr ?_
         exact ⟨Or.inr ⟨hInA, hInB⟩ , hInB⟩ 
-      
+
+-- (A + B) ∩ C = A ∩ C + B ∩ C
+theorem symmetric_difference_inter_dist (A B C : NFObject) (hA : IsSet A) (hB : IsSet B) (hC : IsSet C) (AB : NFObject) (hAB : IsSet AB) (hABdef : SymmetricDifference A B hA hB AB) (ABC: NFObject) (hABC: IsSet ABC) (hABCdef: Intersection AB C hAB hC ABC) (AC: NFObject) (hAC: IsSet AC) (hACdef: Intersection A C hA hC AC) (BC: NFObject) (hBC: IsSet BC) (hBCdef: Intersection B C hB hC BC) (ACBC: NFObject) (hACBC: IsSet ACBC) (hACBCdef: SymmetricDifference AC BC hAC hBC ACBC): ABC = ACBC := by
+  apply extensionality ABC ACBC hABC hACBC
+  intro x
+
+  rw [SymmetricDifference] at hACBCdef
+  rw [Intersection] at hABCdef
+
+  rw [SymmetricDifference] at hABdef
+  rw [Intersection] at hACdef
+  rw [Intersection] at hBCdef
+
+  have hABCdefx := hABCdef x
+  have hACBCdefx := hACBCdef x
+  have hABdefx := hABdef x
+  have hACdefx := hACdef x
+  have hBCdefx := hBCdef x
+
+  simp only at hACBCdefx
+  simp only at hABdefx
+
+  rw [<- hBCdefx] at hACBCdefx
+  rw [<- hACdefx] at hACBCdefx
+  
+  rw [<- hABdefx] at hABCdefx
+  -- rw [or_and_right] at hABCdefx
+    
+  
+
+  rw [<- hACBCdefx]
+  rw [<- hABCdefx]
+  
+
+  constructor
+  case mp =>
+    intro ⟨hBASD, hinC⟩ 
+    rcases hBASD with ⟨hinB, hninA⟩  | ⟨hinA, hninB⟩
+    case inl =>
+      refine Or.inl ?_
+      rw [not_and_iff_not_or_not]
+      exact ⟨⟨hinB, hinC⟩, Or.inl hninA⟩
+
+
+    case inr =>
+      refine Or.inr ?_
+      rw [not_and_iff_not_or_not]
+      exact ⟨⟨hinA, hinC⟩,  Or.inl hninB⟩ 
+
+  
+  case mpr =>
+    intro y 
+    rcases y with ⟨⟨hinB, hinC⟩, hninAninC⟩  | ⟨⟨hinA, hinC⟩, hninBninC⟩
+    case inl =>
+      refine ⟨?_, hinC⟩ 
+      rw [not_and'] at hninAninC
+      have hinA := hninAninC hinC
+      exact Or.inl ⟨hinB, hinA⟩ 
+
+    case inr =>
+      refine ⟨?_, hinC⟩
+
+      rw [not_and'] at hninBninC
+      have hninB := hninBninC hinC
+
+      exact Or.inr ⟨hinA, hninB⟩ 
   
 -- Chapter 4.
 axiom singletons (x: NFObject): ∃ (Sx: NFObject), IsSet Sx ∧ ∀ (y: NFObject), y ∈ Sx <-> y = x
