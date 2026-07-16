@@ -26,6 +26,7 @@ def Nonempty (A : NFObject) : Prop := ∃ (x : NFObject), x ∈ A
 def SubsetOf (x a : NFObject) (_: IsSet x) (_: IsSet a) : Prop := ∀ (t : NFObject), t ∈ x → t ∈ a
 infix:40 " ⊆ " => λ x y => SubsetOf x y
 def Disjoint (A B: NFObject) (_: IsSet A) (_: IsSet B): Prop := ∀ (x: NFObject), x ∉ A ∨ x ∉ B
+def Union (A B: NFObject) (_: IsSet A) (_: IsSet B) (C: NFObject): Prop := ∀ (x: NFObject), x ∈ A ∨ x ∈ B <-> x ∈ C
 def Intersection (A B: NFObject) (_: IsSet A) (_: IsSet B) (C: NFObject) : Prop := ∀ (x: NFObject), (x ∈ A ∧ x ∈ B) <-> x ∈ C
 def SymmetricDifference (A B: NFObject) (_: IsSet A) (_: IsSet B) (C: NFObject) : Prop := ∀ (x: NFObject), (x ∈ B ∧ x ∉ A) ∨ (x ∈ A ∧ x ∉ B) <-> x ∈ C
 /- def EmptyIntersection (A B: NFObject) := -/
@@ -87,6 +88,15 @@ theorem empty_exists: ∃ (E: NFObject), IsSet E ∧ Empty E := by
 
 -- Axiom of (Boolean) Unions.
 axiom unions: ∀ (A B : NFObject), IsSet A -> IsSet B -> ∃ (AuB: NFObject), (IsSet AuB) ∧ (∀ (x: NFObject), (x ∈ A ∨ x ∈ B) <-> x ∈ AuB)
+noncomputable def union (A B : NFObject) (hA: IsSet A) (hB: IsSet B) : NFObject := Classical.choose (unions A B hA hB)
+
+theorem union_idempotency (A: NFObject) (hA: IsSet A) (AA: NFObject) (hAA: IsSet AA) (hAAdef: Union A A hA hA AA): A = AA := by 
+  apply extensionality A AA hA hAA
+  intro x 
+  have hAAdefx := hAAdef x
+  rw [or_self_iff] at hAAdefx
+  exact hAAdefx
+
 
 theorem intersection (A B : NFObject) (hA: IsSet A) (hB: IsSet B): ∃ (AiB: NFObject), IsSet AiB ∧ Intersection A B hA hB AiB := by
   obtain ⟨Ac, hAc, hAc_mem⟩ := complements A hA
